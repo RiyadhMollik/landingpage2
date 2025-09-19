@@ -7,7 +7,7 @@ export default function CallToAction() {
   const [productDetails, setProductDetails] = useState({
     name: "সারা বাংলাদেশের মৌজা ম্যাপ",
     originalPrice: 500,
-    currentPrice: 200,
+    currentPrice: 399,
     discount: 60,
     validUntil: "২০২৪ সালের ৩০ জুন"
   });

@@ -6,7 +6,7 @@ export default function PricingCard() {
   const [product, setProduct] = useState({
     name: 'স্ক্যান হয়ে সার্ভারে আসা সব মৌজা ম্যাপ',
     originalPrice: 15000,
-    currentPrice: 200,
+    currentPrice: 399,
     discount: 97,
     description: 'স্ক্যান হয়ে সার্ভারে আসা সব মৌজা ম্যাপ',
     features: [

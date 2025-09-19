@@ -60,8 +60,8 @@ export default function Banner() {
   const [productDetails, setProductDetails] = useState({
     name: "সারা বাংলাদেশের সকল মৌজা ম্যাপ",
     originalPrice: 15000,
-    currentPrice: 200,
-    price: 200,
+    currentPrice: 399,
+    price: 399,
     discount: 97,
     format: "PDF, JPG Format",
     resolution: "High Resolution",

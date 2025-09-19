@@ -2,7 +2,7 @@ export default function FeatureSection() {
   // Product details
   const productDetails = {
     name: "সারা বাংলাদেশের মৌজা ম্যাপ",
-    price: 200,
+    price: 399,
     originalPrice: 15000,
     validUntil: "২০২৪ সালের ৩০ জুন"
   };

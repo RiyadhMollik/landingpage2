@@ -5,7 +5,7 @@ export default function Footer() {
   // Product details
   const productDetails = {
     name: "সারা বাংলাদেশের মৌজা ম্যাপ",
-    currentPrice: 200,
+    currentPrice: 399,
     validUntil: "২০২৪ সালের ৩০ জুন"
   };
 
