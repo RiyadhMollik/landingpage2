@@ -86,7 +86,7 @@ export async function initializeEpsPayment(orderData, customerData) {
 
     console.log('Initializing EPS payment for amount:', orderData.amount);
     console.log('Merchant Transaction ID:', merchantTransactionId);
-
+    console.log('EPS Payment Payload:', paymentPayload);
     // Make API call to initialize payment
     const response = await axios.post(
       `${epsConfig.base_url}/EPSEngine/InitializeEPS`,
