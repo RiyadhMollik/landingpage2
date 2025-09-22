@@ -43,37 +43,91 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const exportCsv = searchParams.get('export') === 'true';
+    const exportCsv = searchParams.get('export') === 'csv';
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     
-    // Query database for orders
-    let query = {
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page')) || 1;
+    const limit = searchParams.get('limit') === 'all' ? null : parseInt(searchParams.get('limit')) || 10;
+    const offset = limit ? (page - 1) * limit : 0;
+    
+    // Base query configuration
+    let queryOptions = {
       include: [{ association: 'product' }],
       order: [['createdAt', 'DESC']]
     };
     
     // Add date filtering if provided
     if (startDate && endDate) {
-      query.where = {
+      queryOptions.where = {
         createdAt: {
-          [db.Sequelize.Op.between]: [new Date(startDate), new Date(endDate)]
+          [db.Sequelize.Op.between]: [new Date(startDate), new Date(endDate + 'T23:59:59.999Z')]
         }
       };
     }
     
-    const orders = await db.Order.findAll(query);
-    
-    // Handle CSV export
+    // Handle CSV export - get all data without pagination
     if (exportCsv) {
-      // In a real implementation, we would generate a CSV file
-      return NextResponse.json({
-        message: 'CSV export functionality is available',
-        status: 'success'
+      const allOrders = await db.Order.findAll(queryOptions);
+      
+      // Generate CSV content
+      const csvHeaders = ['Order ID', 'Customer Name', 'Customer Email', 'Customer Mobile', 'Product Name', 'Amount', 'Payment Method', 'Payment Status', 'Order Status', 'Created Date'];
+      const csvRows = allOrders.map(order => [
+        order.id,
+        order.customerName,
+        order.customerEmail,
+        order.customerMobile,
+        order.product?.name || 'N/A',
+        order.amount,
+        order.paymentMethod,
+        order.paymentStatus,
+        order.orderStatus,
+        new Date(order.createdAt).toLocaleDateString()
+      ]);
+      
+      const csvContent = [csvHeaders, ...csvRows]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+      
+      return new NextResponse(csvContent, {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': `attachment; filename="orders-${new Date().toISOString().split('T')[0]}.csv"`
+        }
       });
     }
     
-    return NextResponse.json(orders);
+    // Add pagination to query if limit is specified
+    if (limit) {
+      queryOptions.limit = limit;
+      queryOptions.offset = offset;
+    }
+    
+    // Get total count for pagination metadata
+    const totalItems = await db.Order.count({
+      where: queryOptions.where || {}
+    });
+    
+    // Get orders with pagination
+    const orders = await db.Order.findAll(queryOptions);
+    
+    // Calculate pagination metadata
+    const totalPages = limit ? Math.ceil(totalItems / limit) : 1;
+    const currentPage = page;
+    
+    // Return paginated response
+    return NextResponse.json({
+      orders: orders,
+      pagination: {
+        currentPage: currentPage,
+        totalItems: totalItems,
+        totalPages: totalPages,
+        itemsPerPage: limit || totalItems,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1
+      }
+    });
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json(

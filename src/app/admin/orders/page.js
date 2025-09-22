@@ -10,12 +10,18 @@ export default function OrdersPage() {
     startDate: '',
     endDate: ''
   });
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    itemsPerPage: 10,
+    totalItems: 0,
+    totalPages: 0
+  });
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  const fetchOrders = async (filters = {}) => {
+  const fetchOrders = async (filters = {}, page = 1) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
@@ -23,6 +29,10 @@ export default function OrdersPage() {
 
       let url = '/api/orders';
       const queryParams = [];
+      
+      // Add pagination parameters
+      queryParams.push(`page=${page}`);
+      queryParams.push(`limit=${pagination.itemsPerPage || 10}`);
       
       if (filters.startDate) {
         queryParams.push(`startDate=${filters.startDate}`);
@@ -47,7 +57,31 @@ export default function OrdersPage() {
       }
 
       const data = await response.json();
-      setOrders(data);
+      setOrders(data.orders || data);
+      
+      // Update pagination info if the API returns pagination metadata
+      if (data.pagination) {
+        setPagination(prev => ({
+          ...prev,
+          currentPage: data.pagination.currentPage,
+          totalItems: data.pagination.totalItems,
+          totalPages: data.pagination.totalPages
+        }));
+      } else if (data.totalItems) {
+        // Fallback if API returns total count differently
+        setPagination(prev => ({
+          ...prev,
+          currentPage: page,
+          totalItems: data.totalItems,
+          totalPages: Math.ceil(data.totalItems / (prev.itemsPerPage || 10))
+        }));
+      } else {
+        // If no pagination metadata, assume current page
+        setPagination(prev => ({
+          ...prev,
+          currentPage: page
+        }));
+      }
     } catch (error) {
       console.error('Error fetching orders:', error);
       setError('Failed to load orders');
@@ -65,7 +99,8 @@ export default function OrdersPage() {
   };
 
   const applyDateFilter = () => {
-    fetchOrders(dateFilter);
+    setPagination(prev => ({ ...prev, currentPage: 1 })); // Reset to first page
+    fetchOrders(dateFilter, 1);
   };
 
   const resetDateFilter = () => {
@@ -73,7 +108,27 @@ export default function OrdersPage() {
       startDate: '',
       endDate: ''
     });
-    fetchOrders();
+    setPagination(prev => ({ ...prev, currentPage: 1 })); // Reset to first page
+    fetchOrders({}, 1);
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages) {
+      fetchOrders(dateFilter, newPage);
+    }
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setPagination(prev => ({ 
+      ...prev, 
+      itemsPerPage: newItemsPerPage, 
+      currentPage: 1 
+    }));
+    
+    // Use a timeout to ensure state is updated before making the API call
+    setTimeout(() => {
+      fetchOrders(dateFilter, 1);
+    }, 0);
   };
 
   const exportToCsv = async () => {
@@ -83,6 +138,9 @@ export default function OrdersPage() {
 
       let url = '/api/orders?export=csv';
       const queryParams = [];
+      
+      // Export all data, not just current page
+      queryParams.push('limit=all');
       
       if (dateFilter.startDate) {
         queryParams.push(`startDate=${dateFilter.startDate}`);
@@ -307,6 +365,122 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
+
+      {/* Pagination Component */}
+      {orders.length > 0 && pagination.totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-700">
+              Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} results
+            </span>
+            <select
+              value={pagination.itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              className="ml-2 rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+            >
+              <option value={5}>5 per page</option>
+              <option value={10}>10 per page</option>
+              <option value={25}>25 per page</option>
+              <option value={50}>50 per page</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center space-x-1">
+            {/* Previous Button */}
+            <button
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 1}
+              className={`px-3 py-2 text-sm font-medium rounded-md ${
+                pagination.currentPage === 1
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              Previous
+            </button>
+
+            {/* Page Numbers */}
+            {(() => {
+              const pages = [];
+              const { currentPage, totalPages } = pagination;
+              let startPage = Math.max(1, currentPage - 2);
+              let endPage = Math.min(totalPages, currentPage + 2);
+
+              // Adjust range if we're near the beginning or end
+              if (currentPage <= 3) {
+                endPage = Math.min(5, totalPages);
+              }
+              if (currentPage > totalPages - 3) {
+                startPage = Math.max(totalPages - 4, 1);
+              }
+
+              // First page
+              if (startPage > 1) {
+                pages.push(
+                  <button
+                    key={1}
+                    onClick={() => handlePageChange(1)}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md"
+                  >
+                    1
+                  </button>
+                );
+                if (startPage > 2) {
+                  pages.push(<span key="start-ellipsis" className="px-2 text-gray-400">...</span>);
+                }
+              }
+
+              // Page numbers
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <button
+                    key={i}
+                    onClick={() => handlePageChange(i)}
+                    className={`px-3 py-2 text-sm font-medium rounded-md ${
+                      i === currentPage
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+
+              // Last page
+              if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                  pages.push(<span key="end-ellipsis" className="px-2 text-gray-400">...</span>);
+                }
+                pages.push(
+                  <button
+                    key={totalPages}
+                    onClick={() => handlePageChange(totalPages)}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md"
+                  >
+                    {totalPages}
+                  </button>
+                );
+              }
+
+              return pages;
+            })()}
+
+            {/* Next Button */}
+            <button
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={pagination.currentPage === pagination.totalPages}
+              className={`px-3 py-2 text-sm font-medium rounded-md ${
+                pagination.currentPage === pagination.totalPages
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

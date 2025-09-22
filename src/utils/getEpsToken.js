@@ -24,7 +24,7 @@ export function generateEpsHash(data, hashKey) {
 export async function getEpsToken() {
   try {
     // Check for cached token
-    const cachedToken = await redisGet('eps_token');
+    const cachedToken = await redisGet('eps_token2');
     if (cachedToken) {
       console.log('Using cached EPS token');
       return cachedToken;

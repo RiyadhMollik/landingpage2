@@ -21,8 +21,8 @@ export default function AdminDashboardPage() {
       const token = localStorage.getItem('adminToken');
       if (!token) return;
 
-      // Fetch orders for stats calculation
-      const response = await fetch('/api/orders', {
+      // Fetch all orders for stats calculation (without pagination for dashboard)
+      const response = await fetch('/api/orders?limit=all', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -32,7 +32,10 @@ export default function AdminDashboardPage() {
         throw new Error('Failed to fetch orders');
       }
 
-      const orders = await response.json();
+      const data = await response.json();
+      
+      // Handle both paginated and non-paginated response formats
+      const orders = data.orders || data;
       
       // Calculate stats
       const totalOrders = orders.length;

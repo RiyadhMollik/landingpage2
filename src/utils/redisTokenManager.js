@@ -39,7 +39,7 @@ redisClient.on('connect', () => {
  * @param {number} expirationSeconds - Token expiration time in seconds
  * @returns {Promise<string>} - The token
  */
-export async function getOrFetchToken(tokenKey, fetchTokenFn, expirationSeconds = 3600) {
+export async function getOrFetchToken(tokenKey, fetchTokenFn, expirationSeconds = 1200) {
   try {
     // If Redis is not connected, fetch a new token directly
     if (!isConnected) {
@@ -106,7 +106,7 @@ export function isRedisConnected() {
  * @param {number} expirationSeconds - Token expiration time in seconds
  * @returns {Promise<string>} - The new token
  */
-export async function forceRefreshToken(tokenKey, fetchTokenFn, expirationSeconds = 3600) {
+export async function forceRefreshToken(tokenKey, fetchTokenFn, expirationSeconds = 1200) {
   try {
     console.log(`Force refreshing ${tokenKey}`);
     const token = await fetchTokenFn();
@@ -173,6 +173,4 @@ export async function redisSet(key, value, expirationSeconds = null) {
     return false;
   }
 }
-
-// Export the Redis client for direct use if needed
 export { redisClient };
