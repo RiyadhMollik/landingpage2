@@ -59,6 +59,58 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const downloadCompletedOrdersCSV = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) return;
+
+      // Fetch all orders to filter completed ones
+      const response = await fetch('/api/orders?limit=all', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+
+      const data = await response.json();
+      const orders = data.orders || data;
+      
+      // Filter completed orders and get unique emails
+      const completedOrders = orders.filter(order => order.paymentStatus === 'completed');
+      const uniqueEmails = [...new Set(completedOrders.map(order => order.customerEmail))];
+
+      // Generate CSV content with the specified format
+      const csvHeaders = ['Group Email [Required]', 'Member Email', 'Member Type', 'Member Role'];
+      const csvRows = uniqueEmails.map(email => [
+        'filesharing@bdmouza.com',
+        email,
+        'USER',
+        'MEMBER'
+      ]);
+
+      const csvContent = [csvHeaders, ...csvRows]
+        .map(row => row.map(field => `"${field}"`).join(','))
+        .join('\n');
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `completed-orders-members-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading completed orders CSV:', error);
+      setError('Failed to download completed orders CSV');
+    }
+  };
+
   if (loading) {
     return (
       <div className="px-4 sm:px-6 lg:px-8 py-8">
@@ -97,6 +149,18 @@ export default function AdminDashboardPage() {
           <p className="mt-2 text-sm text-gray-700">
             Overview of your store performance and recent activity.
           </p>
+        </div>
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+          <button
+            type="button"
+            onClick={downloadCompletedOrdersCSV}
+            className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 sm:w-auto"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Download Completed Orders CSV
+          </button>
         </div>
       </div>
 

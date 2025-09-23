@@ -113,7 +113,7 @@ export default function Banner() {
           <div className="inline-block bg-gradient-accent text-white text-xs sm:text-sm font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-full mb-4 sm:mb-6 shadow-glow-pink">
             🔥 99% ছাড়! সীমিত সময়ের জন্য
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-gradient-primary">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-white">
             {productDetails.name}
           </h1>
           <p className="text-sm sm:text-base md:text-lg mt-4 sm:mt-6 text-neutral-300">
@@ -122,7 +122,7 @@ export default function Banner() {
           <div className="mt-4 sm:mt-6">
             <p className="text-2xl sm:text-3xl md:text-4xl font-extrabold">
               <span className="line-through text-neutral-500 text-lg sm:text-xl md:text-2xl">15000৳</span>{' '}
-              <span className="text-accent-400">মাত্র {productDetails.price}৳</span>
+              <span className="text-white">মাত্র {productDetails.price}৳</span>
             </p>
             <p className="mt-2 sm:mt-3 text-neutral-300 text-sm sm:text-base">আজই অর্ডার করুন এবং বিশাল সাশ্রয় করুন!</p>
           </div>
