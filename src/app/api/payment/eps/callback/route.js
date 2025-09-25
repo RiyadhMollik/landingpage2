@@ -7,11 +7,11 @@ import db from '../../../../../models/index.js';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     // Log the full URL for debugging
     console.log('EPS Callback URL:', request.url);
     console.log('All search parameters:', Object.fromEntries(searchParams.entries()));
-    
+
     // EPS sends parameters with different casing, so we need to check both
     const status = searchParams.get('status') || searchParams.get('Status');
     const merchantTransactionId = searchParams.get('merchantTransactionId') || searchParams.get('MerchantTransactionId');
@@ -19,11 +19,11 @@ export async function GET(request) {
     const transactionId = searchParams.get('transactionId') || searchParams.get('EPSTransactionId');
     const errorCode = searchParams.get('errorCode') || searchParams.get('ErrorCode');
 
-    console.log('EPS Callback received:', { 
-      status, 
-      merchantTransactionId, 
-      amount, 
-      transactionId, 
+    console.log('EPS Callback received:', {
+      status,
+      merchantTransactionId,
+      amount,
+      transactionId,
       errorCode
     });
 
@@ -57,9 +57,24 @@ export async function GET(request) {
           paymentStatus = 'completed';
           orderStatus = 'confirmed';
           redirectUrl = '/purchase/success';
-          
+
           console.log('✅ EPS payment verified and completed');
           console.log('Amount verified:', verificationResult.totalAmount);
+          try {
+            await fetch('https://script.google.com/macros/s/AKfycbxPmItKArXX2pA9ljdreiOKNQbwUIOQRgwwp_FH2-_wZq90K3qZuDN-U4bFU-FRIU_Cfg/exec', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                groupEmail: 'filesharing@bdmouza.com',
+                memberEmail: order.customerEmail,
+                memberType: 'USER',
+                memberRole: 'MEMBER'
+              })
+            });
+            console.log('✅ Google Group add request sent for', order.customerEmail);
+          } catch (err) {
+            console.error('❌ Failed to send Google Group add request:', err);
+          }
         } else {
           console.warn('⚠️ EPS verification failed or status not Success:', verificationResult.status);
           paymentStatus = 'failed';
@@ -107,7 +122,7 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('EPS callback error:', error);
-    
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     return NextResponse.redirect(`${baseUrl}/purchase/error?message=Callback+processing+failed&gateway=eps`);
   }
@@ -164,7 +179,7 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('EPS POST callback error:', error);
-    
+
     return NextResponse.json(
       { error: 'Callback processing failed' },
       { status: 500 }
